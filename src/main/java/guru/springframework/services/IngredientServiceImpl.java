@@ -9,6 +9,7 @@ import guru.springframework.repositories.reactive.RecipeReactiveRepository;
 import guru.springframework.repositories.reactive.UnitOfMeasureReactiveRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
@@ -37,7 +38,7 @@ public class IngredientServiceImpl implements IngredientService {
     @Override
     public Mono<IngredientCommand> findByRecipeIdAndIngredientId(String recipeId, String ingredientId) {
 
-        return recipeReactiveRepository.findById(recipeId)
+      /*  recipeReactiveRepository.findById(recipeId)
                 .map(recipe -> recipe.getIngredients()
                         .stream()
                         .filter(ingredient -> ingredient.getId().equalsIgnoreCase(ingredientId))
@@ -47,7 +48,18 @@ public class IngredientServiceImpl implements IngredientService {
                     IngredientCommand command = ingredientToIngredientCommand.convert(ingredient.get());
                     command.setRecipeId(recipeId);
                     return command;
-                });
+                });*/
+
+        return recipeReactiveRepository.findById(recipeId).
+                flatMapIterable(Recipe::getIngredients).
+                filter(ingredient -> ingredient.getId().equalsIgnoreCase(ingredientId)).
+                single().
+                map(ingredient -> {
+            IngredientCommand command = ingredientToIngredientCommand.convert(ingredient);
+            command.setRecipeId(recipeId);
+            return command;
+        });
+
 
     }
 
@@ -59,7 +71,7 @@ public class IngredientServiceImpl implements IngredientService {
 
             //todo toss error if not found!
             log.error("Recipe not found for id: " + command.getRecipeId());
-            return Mono.just(new IngredientCommand());
+            return Mono.fromSupplier(() -> new IngredientCommand());
         } else {
 
             Optional<Ingredient> ingredientOptional = recipe
@@ -106,7 +118,7 @@ public class IngredientServiceImpl implements IngredientService {
             IngredientCommand ingredientCommandSaved = ingredientToIngredientCommand.convert(savedIngredientOptional.get());
             ingredientCommandSaved.setRecipeId(recipe.getId());
 
-            return Mono.just(ingredientCommandSaved);
+            return Mono.fromSupplier(() -> ingredientCommandSaved);
         }
 
     }

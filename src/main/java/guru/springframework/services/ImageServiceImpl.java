@@ -25,7 +25,8 @@ public class ImageServiceImpl implements ImageService {
     @Override
     public Mono<Void> saveImageFile(String recipeId, MultipartFile file) {
 
-        Mono<Recipe> recipeMono = recipeReactiveRepository.findById(recipeId)
+      /*  Mono<Recipe> recipeMono =*/
+        recipeReactiveRepository.findById(recipeId)
                 .map(recipe -> {
                     Byte[] byteObjects = new Byte[0];
                     try {
@@ -45,9 +46,9 @@ public class ImageServiceImpl implements ImageService {
                         e.printStackTrace();
                         throw new RuntimeException(e);
                     }
-                });
+                }).map(recipe ->recipeReactiveRepository.save(recipe)).then();
 
-        recipeReactiveRepository.save(recipeMono.block()).block();
+       // recipeReactiveRepository.save(recipeMono.block()).block();
 
         return Mono.empty();
 
